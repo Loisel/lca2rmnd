@@ -44,19 +44,6 @@ class LCAReporting():
         self.selector = ActivitySelector()
         self.methods = methods
 
-        if not self.methods:
-            raise ValueError(("No methods found in the current brightway2"
-                              " project for the following group: {}.")
-                             .format(indicatorgroup))
-
-        # # check for brightway2 databases
-        # dbnames = set(["_".join(["ecoinvent", scenario, str(yr)])
-        #                for yr in years])
-        # missing = dbnames - set(bw.databases)
-        # if missing:
-        #     raise ValueError(
-        #         "The following brightway2 databases are missing: {}"
-        #         .format(missing))
         rdc = RemindDataCollection(self.scenario, remind_output_folder)
         self.data = rdc.data[rdc.data.Year.isin(self.years) &
                              (rdc.data.Region != "World")]
