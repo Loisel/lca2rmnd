@@ -30,8 +30,8 @@ class LCAReporting():
         and 20 years for the last two time steps).
         The corresponding brightway databases have to be part of the current project.
     :vartype year: array
-    :ivar indicatorgroup: name of the set of indicators to
-        calculate the scores for, defaults to ReCiPe Midpoint (H)
+    :ivar methods: list of brightway2 method tuples to
+        calculate the scores for
     :vartype source_db: str
     """
     def __init__(self, scenario, years, project,
