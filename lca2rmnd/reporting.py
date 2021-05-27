@@ -143,8 +143,8 @@ class TransportLCAReporting(LCAReporting):
                 demand = {
                     Activity(
                         Act.get(
-                            (Act.name == "transport, passenger car, fleet average, {}, {}".format(
-                                techmap[tech], year))
+                            (Act.name == "transport, passenger car, fleet average, {}".format(
+                                techmap[tech]))
                             & (Act.location == region)
                             & (Act.database == db.name))): scale
                 }
