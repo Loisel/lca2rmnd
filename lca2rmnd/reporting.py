@@ -115,16 +115,16 @@ class TransportLCAReporting(LCAReporting):
             if region in ["CHA", "REF", "IND"]:
                 demand = {
                     Activity(Act.get(
-                        (Act.name == "transport, passenger car, fleet average, {}, {}".format(
-                            techmap[tech]["petrol"], year))
+                        (Act.name == "transport, passenger car, fleet average, {}".format(
+                            techmap[tech]["petrol"]))
                         & (Act.location == region)
                         & (Act.database == db.name))): scale
                 }
             else:
                 demand = {
                     Activity(Act.get(
-                        (Act.name == "transport, passenger car, fleet average, {}, {}".format(
-                            techmap[tech][liq], year))
+                        (Act.name == "transport, passenger car, fleet average, {}".format(
+                            techmap[tech][liq]))
                         & (Act.location == region)
                         & (Act.database == db.name))): scale * liq_share[liq]
                     for liq in ["diesel", "petrol"]
@@ -218,7 +218,7 @@ class TransportLCAReporting(LCAReporting):
         method = ('ILCD 2.0 2018 midpoint',
                   'resources', 'minerals and metals')
         year = self.years[0]
-        act_str = "transport, passenger car, fleet average, battery electric, {}".format(year)
+        act_str = "transport, passenger car, fleet average, battery electric"
 
         # upstream material demands are the same for all regions
         # so we can use GLO here
