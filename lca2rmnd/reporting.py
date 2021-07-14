@@ -206,7 +206,7 @@ class TransportLCAReporting(LCAReporting):
         print("Calculation took {} seconds.".format(time.time() - start))
         df["total_score"] = df["value"] * df["score_pkm"] * 1e9
         df["total_score_direct"] = df["value"] * df["score_pkm_direct"] * 1e9
-        return df[["total_score", "score_pkm"]]
+        return df[["total_score", "total_score_direct", "score_pkm", "score_pkm_direct"]]
 
     def _get_material_bioflows_for_bev(self):
         """
