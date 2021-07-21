@@ -8,6 +8,7 @@ from premise.activity_maps import InventorySet
 from premise.utils import eidb_label
 
 from bw2data.backends.peewee.proxies import Activity, ActivityDataset as Act
+
 import brightway2 as bw
 import pandas as pd
 import numpy as np
@@ -139,7 +140,8 @@ class TransportLCAReporting(LCAReporting):
                             & (Act.location == region)
                             & (Act.database == db.name))): scale
                 }
-            except ActivityDatasetDoesNotExist as e:
+            except Exception as e:
+                print("Error: {}".format(e.__class__.__name__))
                 print("No activity found for {}, {} in {}".format(techmap[tech], year, db.name))
                 demand = {}
         return demand
@@ -184,6 +186,9 @@ class TransportLCAReporting(LCAReporting):
                             .unique()):
                     demand = self._act_from_variable(var, db, year, region)
 
+                    if not demand:
+                        continue
+
                     lca = bw.LCA(demand,
                                  method=self.methods[0])
                     # build inventories
@@ -226,7 +231,7 @@ class TransportLCAReporting(LCAReporting):
             Act.get((Act.name == act_str)
                     & (Act.database == eidb_label(
                         self.model, self.scenario, year))
-                    & (Act.location == "EUR")))
+                    & (Act.location == self.regions[0])))
         lca = bw.LCA({act: 1}, method=method)
         lca.lci()
         lca.lcia()
