@@ -57,6 +57,7 @@ class LCAReporting():
             # all regions there?
             self.regions = regions
             assert self.regions in self.data.Region.unique()
+            self.data = rdc.data[rdc.data.Region.isin(self.regions)]
         self.geo = Geomap(self.model)
 
 
@@ -250,45 +251,52 @@ class TransportLCAReporting(LCAReporting):
         """
         # materials
         bioflows = self._get_material_bioflows_for_bev()
+        flownames = {code: bw.get_activity(code)["name"].split(",")[0] for code in bioflows}
 
         df = self.data[self.data.Variable.isin(self.variables)]
 
-        df.set_index(["Year", "Region", "Variable"], inplace=True)
+        df.loc[:, "per_pkm"] = 0.
+        # add methods dimension & score column
+        methods_df = pd.DataFrame({"Material": flownames.values(), "per_pkm": 0.})
+        df = df.merge(methods_df, "outer")  # on "score_pkm"
 
+        df.set_index(["Year", "Region", "Variable", "Material"], inplace=True)
         start = time.time()
-        result = {}
+
         # calc score
         for year in self.years:
+            # find activities which at the moment do not depend
+            # on regions
             db = bw.Database(eidb_label(self.model, self.scenario, year))
-            for region in self.regions:
-                # create large lca demand object
-                demand = [
-                    self._act_from_variable(
-                        var, db, year, region,
-                        scale=df.loc[(year, region, var), "value"])
-                    for var in (df.loc[(year, region)]
-                                .index.get_level_values(0)
-                                .unique())]
-                # flatten dictionaries
-                demand_flat = {}
-                for item in demand:
-                    for act, val in item.items():
-                        demand_flat[act] = val + demand_flat.get(act, 0)
+            fleet_acts = [a for a in db if a["name"].startswith("transport, passenger car, fleet average")]
+            lca = bw.LCA({fleet_acts[0]: 1})
+            lca.lci()
 
-                lca = bw.LCA(demand_flat)
-                # build inventories
-                lca.lci()
-                for code in bioflows:
-                    result[(
-                        year, region,
-                        bw.get_activity(code)["name"].split(",")[0]
-                    )] = (
-                        lca.inventory.sum(axis=1)[
-                            lca.biosphere_dict[code], 0]
-                    )
-        df_result = pd.Series(result)
+            for region in self.regions:
+                for var in (df.loc[(year, region)]
+                            .index.get_level_values(0)
+                            .unique()):
+                    demand = self._act_from_variable(var, db, year, region)
+
+                    if not demand:
+                        continue
+
+                    lca = bw.LCA(demand)
+                    # build inventories
+                    lca.lci()
+
+                    ## this is a workaround to correct for higher loadfactors in the LowD scenarios
+                    if "_LowD" in self.scenario:
+                        fct = max(1 - (year - 2020)/15 * 0.15, 0.85)
+                    else:
+                        fct = 1.
+                    for code in bioflows:
+                        df.at[(year, region, var, flownames[code]),
+                               "per_pkm"] = fct * lca.inventory.sum(axis=1)[
+                                lca.biosphere_dict[code], 0]
         print("Calculation took {} seconds.".format(time.time() - start))
-        return df_result * 1e9  # kg
+        df["total"] = df["value"] * df["per_pkm"] * 1e9
+        return df[["total", "per_pkm"]]
 
     def report_direct_emissions(self):
         """
